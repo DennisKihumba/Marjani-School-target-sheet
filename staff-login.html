@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Marjani School — Staff Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="paint-strip"></div>
+  <div class="wrap" style="max-width:420px;padding-top:40px;">
+    <div class="brand" style="justify-content:center;max-width:420px;">
+      <div class="brand-left">
+        <img src="assets/logo.jpeg" alt="Marjani School logo" class="brand-logo" />
+        <div><h1>Marjani School</h1><p>Staff sign in</p></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 class="title">Sign in</h2>
+      <p class="sub">For teachers and admin only. Learners should use the main sign-in page.</p>
+      <div class="error" id="loginError"></div>
+      <form id="staffLoginForm">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="username" />
+        <label for="password">Password</label>
+        <input type="password" id="password" required autocomplete="current-password" />
+        <div class="row-btns"><button type="submit" class="btn">Sign in</button></div>
+      </form>
+    </div>
+    <footer class="note">Accounts are created by the school admin — contact them if you need access.<br><a href="index.html" style="color:var(--ink-dim);">← Learner sign in</a></footer>
+  </div>
+  <script type="module" src="js/staff-login.js"></script>
+</body>
+</html>

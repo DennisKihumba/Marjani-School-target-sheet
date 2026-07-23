@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Marjani School — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="paint-strip"></div>
+  <div class="wrap wide">
+    <div class="dash-header">
+      <div class="brand-left">
+        <img src="assets/logo.jpeg" alt="Marjani School logo" class="brand-logo" />
+        <div><h1>Marjani School</h1><p>Admin dashboard</p></div>
+      </div>
+      <button class="btn ghost small" id="signOutBtn">Sign out</button>
+    </div>
+
+    <!-- Current term banner -->
+    <div class="card" style="margin-bottom:20px;padding:18px 22px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">
+        <div>
+          <label style="margin-bottom:2px;">Current school term</label>
+          <p class="meta-name" id="currentTermLabel" style="margin:0;">—</p>
+          <p class="sub" style="margin:4px 0 0;">This controls what term new submissions are saved under, and what learners see when they select subjects/targets.</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="margin:0;"><label>Term</label><select id="termSelect" style="margin:0;"></select></div>
+          <div style="margin:0;"><label>Year</label><input type="number" id="termYear" style="margin:0;width:110px;"></div>
+          <button type="button" class="btn small" id="saveTermBtn">Update term</button>
+        </div>
+      </div>
+      <div class="error" id="termError" style="margin-top:12px;"></div>
+      <div class="success" id="termSuccess" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="dash-tabs">
+      <button class="dash-tab active" data-tab="learners">Learners</button>
+      <button class="dash-tab" data-tab="staff">Teachers</button>
+      <button class="dash-tab" data-tab="subjects">Subjects</button>
+      <button class="dash-tab" data-tab="submissions">Submissions</button>
+    </div>
+
+    <!-- LEARNERS -->
+    <div class="card tab-panel" id="tab-learners">
+      <h2 class="title">Add a learner</h2>
+      <p class="sub">Give each learner their PIN separately (write it on their register, or read it out) — this is what they use to sign in along with their name.</p>
+      <div class="error" id="learnerError"></div>
+      <div class="success" id="learnerSuccess"></div>
+      <form id="addLearnerForm" class="form-grid">
+        <div><label for="lFirst">First name</label><input type="text" id="lFirst" required></div>
+        <div><label for="lLast">Last name</label><input type="text" id="lLast" required></div>
+        <div><label for="lGrade">Grade</label><select id="lGrade" required></select></div>
+        <div><label for="lPin">PIN (4 digits)</label><input type="text" id="lPin" inputmode="numeric" maxlength="4" placeholder="auto if left blank"></div>
+      </form>
+      <div class="row-btns"><button type="button" class="btn" id="addLearnerBtn">Add learner</button></div>
+
+      <h2 class="title" style="margin-top:32px;">Class register</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <input type="text" id="learnerSearch" placeholder="Search by name…" style="max-width:260px;margin:0;">
+        <select id="learnerGradeFilter" style="max-width:180px;margin:0;"><option value="">All grades</option></select>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th style="width:20%;">Name</th><th style="width:14%;">Grade</th><th style="width:9%;">PIN</th><th style="width:12%;">Status</th><th style="width:45%;"></th></tr></thead>
+          <tbody id="learnerTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- STAFF -->
+    <div class="card tab-panel" id="tab-staff" style="display:none;">
+      <h2 class="title">Add a teacher or admin account</h2>
+      <p class="sub">Creates a real sign-in (email + password) for the staff sign-in page. A teacher account is tied to exactly one grade — they'll only see submissions from learners in that grade.</p>
+      <div class="error" id="staffError"></div>
+      <div class="success" id="staffSuccess"></div>
+      <form id="addStaffForm" class="form-grid">
+        <div><label for="sName">Name (shown as "Tr. ___")</label><input type="text" id="sName" placeholder="e.g. Dennis" required></div>
+        <div><label for="sEmail">Email</label><input type="email" id="sEmail" placeholder="e.g. Grade4@brightbeginning.co.ke" required></div>
+        <div><label for="sPassword">Temporary password</label><input type="text" id="sPassword" required minlength="6"></div>
+        <div><label for="sRole">Role</label>
+          <select id="sRole"><option value="teacher">Teacher</option><option value="admin">Admin</option></select>
+        </div>
+        <div id="sGradeWrap"><label for="sGrade">Lead teacher for grade</label><select id="sGrade"></select></div>
+      </form>
+      <div class="row-btns"><button type="button" class="btn" id="addStaffBtn">Create account</button></div>
+      <p class="sub" style="margin-top:14px;">Share the email and temporary password with the teacher directly — they should change the password after first sign-in (via "Forgot password" on the staff sign-in page).</p>
+
+      <h2 class="title" style="margin-top:32px;">Staff accounts</h2>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th style="width:22%;">Name</th><th style="width:32%;">Email</th><th style="width:14%;">Role</th><th style="width:32%;">Grade</th></tr></thead>
+          <tbody id="staffTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUBJECTS -->
+    <div class="card tab-panel" id="tab-subjects" style="display:none;">
+      <h2 class="title">Subject list</h2>
+      <p class="sub">This is the list learners choose from when picking their subjects.</p>
+      <div class="error" id="subjectsError"></div>
+      <div class="success" id="subjectsSuccess"></div>
+      <div class="subject-grid" id="subjectsEditGrid"></div>
+      <div class="row-btns" style="margin-top:16px;">
+        <input type="text" id="newSubjectInput" placeholder="New subject name" style="max-width:220px;margin-bottom:0;">
+        <button type="button" class="btn" id="addSubjectBtn">Add subject</button>
+        <button type="button" class="btn ghost" id="saveSubjectsBtn">Save changes</button>
+      </div>
+    </div>
+
+    <!-- SUBMISSIONS -->
+    <div class="card tab-panel" id="tab-submissions" style="display:none;">
+      <h2 class="title">All submissions</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <input type="text" id="subSearch" placeholder="Search by name…" style="max-width:260px;margin:0;">
+        <select id="subGradeFilter" style="max-width:180px;margin:0;"><option value="">All grades</option></select>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th style="width:16%;">Learner</th><th style="width:10%;">Grade</th><th style="width:12%;">Term</th><th style="width:38%;">Subjects &amp; targets</th><th style="width:12%;">Updated</th><th style="width:12%;"></th></tr></thead>
+          <tbody id="submissionsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function myUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && myUserDoc().data.role == 'admin';
+    }
+    function isTeacher() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && myUserDoc().data.role == 'teacher';
+    }
+
+    // Admin/teacher account profiles
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Editable config, e.g. config/subjects -> { list: [...] }
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Learner roster
+    match /learners/{learnerId} {
+      allow read: if isAdmin() || isTeacher() || isSignedIn();
+      allow create, delete: if isAdmin();
+      // Any signed-in (anonymous) session may update this record. We used
+      // to require the uid to match whichever session claimed it first,
+      // but that broke every returning learner (new day, new device, or a
+      // cleared browser means a brand new anonymous uid = locked out).
+      // The name+PIN check in learner.js, done before this update is ever
+      // attempted, is the real gate here.
+      allow update: if isAdmin() || isSignedIn();
+    }
+
+    // Submitted target sheets. One doc per learner PER TERM (doc ID is
+    // learnerId + term + year), so a learner's history across terms and
+    // grade transitions is preserved rather than overwritten.
+    match /submissions/{subId} {
+      allow read: if isAdmin() || isTeacher() || isSignedIn();
+      allow create, update: if isSignedIn() && request.resource.data.learnerId is string;
+    }
+  }
+}

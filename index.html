@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Marjani School — Term Target Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="paint-strip"></div>
+  <div class="brand">
+    <div class="brand-left">
+      <img src="assets/logo.jpeg" alt="Marjani School logo" class="brand-logo" />
+      <div><h1>Marjani School</h1><p>T.H.I.N.K Big · Term Target Score Sheet</p></div>
+    </div>
+  </div>
+  <div class="wrap">
+
+    <div class="stepper" id="stepper">
+      <div class="step" data-step="1"><i></i></div>
+      <div class="step" data-step="2"><i></i></div>
+      <div class="step" data-step="3"><i></i></div>
+      <div class="step" data-step="4"><i></i></div>
+    </div>
+
+    <div class="card">
+
+      <section class="screen active" id="screen-1">
+        <h2 class="title">Learner sign-in</h2>
+        <p class="sub">Enter your two correct names, your PIN, and your school name.</p>
+        <div class="error" id="loginError"></div>
+        <form id="loginForm">
+          <label for="firstName">First name</label>
+          <input type="text" id="firstName" autocomplete="off" required />
+          <label for="lastName">Last name</label>
+          <input type="text" id="lastName" autocomplete="off" required />
+          <label for="pin">PIN</label>
+          <input type="text" id="pin" inputmode="numeric" autocomplete="off" placeholder="Given to you by your teacher" required />
+          <label for="schoolName">School name</label>
+          <input type="text" id="schoolName" autocomplete="off" placeholder="Type your school's name" required />
+          <div class="row-btns"><button type="submit" class="btn">Continue →</button></div>
+        </form>
+      </section>
+
+      <section class="screen" id="screen-2">
+        <h2 class="title">Pick your subjects</h2>
+        <p class="sub">Select every subject you are taking this term.</p>
+        <div class="subject-grid" id="subjectGrid"></div>
+        <p class="count-hint" id="subjectCount">0 subjects selected</p>
+        <p class="count-hint" id="subjectLockNote" style="display:none;color:var(--cyan);">🔒 Subjects are locked — see your teacher to change them.</p>
+        <div class="error" id="subjectError"></div>
+        <div class="row-btns">
+          <button type="button" class="btn ghost" id="backTo1">← Back</button>
+          <button type="button" class="btn" id="toScreen3">Continue →</button>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-3">
+        <h2 class="title">Set your scores</h2>
+        <p class="sub">Enter your <strong>target</strong> for the term. Come back anytime to add <strong>midterm</strong> and <strong>end-of-term</strong> scores.</p>
+        <div id="targetForm"></div>
+        <p class="count-hint" id="targetLockNote" style="display:none;color:var(--cyan);">🔒 Your target is locked. Midterm and End Term can still be updated.</p>
+        <div class="error" id="targetError"></div>
+        <div class="row-btns">
+          <button type="button" class="btn ghost" id="backTo2">← Back</button>
+          <button type="button" class="btn" id="toScreen4">Review →</button>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-4">
+        <h2 class="title">Your target sheet</h2>
+        <p class="sub">Your data is saved — you can log back in anytime to update midterm and end-of-term scores.</p>
+        <div id="summaryBox">
+          <p class="meta-name" id="sumName"></p>
+          <p class="meta-line" id="sumSchool"></p>
+          <table class="summary">
+            <thead><tr><th>Subject</th><th>Target</th><th>Midterm</th><th>End Term</th></tr></thead>
+            <tbody id="sumTableBody"></tbody>
+          </table>
+        </div>
+        <div class="row-btns">
+          <button type="button" class="btn ghost" id="backTo3">← Back</button>
+          <button type="button" class="btn" id="downloadPdfBtn">⬇ Download PDF</button>
+          <button type="button" class="btn ghost" id="startOverBtn">Log out</button>
+        </div>
+      </section>
+
+    </div>
+    <footer class="note">Marjani School · Term Target Score Sheet<br><a href="staff-login.html" style="color:var(--ink-dim);">Staff sign in →</a></footer>
+  </div>
+
+
+  <script type="module" src="js/learner.js"></script>
+</body>
+</html>

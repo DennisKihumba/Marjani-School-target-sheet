@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Marjani School — Teacher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="paint-strip"></div>
+  <div class="wrap wide">
+    <div class="dash-header">
+      <div class="brand-left">
+        <img src="assets/logo.jpeg" alt="Marjani School logo" class="brand-logo" />
+        <div><h1 id="portalTitle">Marjani School</h1><p id="portalSubtitle">Teacher dashboard</p></div>
+      </div>
+      <button class="btn ghost small" id="signOutBtn">Sign out</button>
+    </div>
+
+    <div class="card">
+      <h2 class="title">Submitted target sheets</h2>
+      <p class="sub" id="termNote"></p>
+      <input type="text" id="subSearch" placeholder="Search by learner name…" style="max-width:260px;">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th style="width:20%;">Learner</th><th style="width:44%;">Subjects — target / midterm / end</th><th style="width:18%;">Updated</th><th style="width:18%;"></th></tr></thead>
+          <tbody id="submissionsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/teacher.js"></script>
+</body>
+</html>
