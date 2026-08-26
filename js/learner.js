@@ -95,12 +95,21 @@ document.getElementById("loginForm").addEventListener("submit", async function (
       return;
     }
 
+    // Run the learner lookup and the two config reads at the same time —
+    // they don't depend on each other, so there's no reason to wait for
+    // one before starting the next. On slower school internet, doing
+    // these one-after-another (as this used to) is the main thing that
+    // made login feel slow.
     const q = query(
       collection(db, "learners"),
       where("firstNameLower", "==", norm(first)),
       where("lastNameLower", "==", norm(last))
     );
-    const results = await getDocs(q);
+    const [results] = await Promise.all([
+      getDocs(q),
+      loadCurrentTerm(),
+      loadSubjectsList()
+    ]);
 
     if (results.empty) {
       showLoginError("We couldn't find that name on the class register. Check your spelling, or see your teacher.");
@@ -115,15 +124,15 @@ document.getElementById("loginForm").addEventListener("submit", async function (
       return;
     }
 
-    await updateDoc(doc(db, "learners", learnerDoc.id), { linkedUid: state.uid });
+    // This is just informational now (shows admin who's currently signed
+    // in) — nothing downstream depends on it finishing, so don't make the
+    // learner wait for it.
+    updateDoc(doc(db, "learners", learnerDoc.id), { linkedUid: state.uid }).catch(() => {});
 
     state.learnerId = learnerDoc.id;
     state.firstName = learnerData.firstName;
     state.lastName = learnerData.lastName;
     state.grade = learnerData.grade || "";
-
-    await loadCurrentTerm();
-    await loadSubjectsList();
 
     // Each term gets its own submission record, so moving to a new term
     // (or a new grade at the start of Term 1) always starts fresh here,
