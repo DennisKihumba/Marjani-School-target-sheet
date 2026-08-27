@@ -219,11 +219,17 @@ function renderLearnerTable(list) {
     const learnerId = btn.dataset.id;
     const subId = `${learnerId}_${termKey(currentTerm, currentYear)}`;
     try {
+      // Deleting a document that doesn't exist is a normal no-op in
+      // Firestore and never throws — so any error caught here is a real
+      // problem (permissions, network) and needs to be shown, not hidden.
       await deleteDoc(doc(db, "submissions", subId));
-    } catch (e) { /* fine if it never existed */ }
-    await updateDoc(doc(db, "learners", learnerId), { linkedUid: null });
-    alert("Done — this learner can log in and start fresh for the current term.");
-    await loadSubmissions();
+      await updateDoc(doc(db, "learners", learnerId), { linkedUid: null });
+      alert("Done — this learner can log in and start fresh for the current term.");
+      await loadSubmissions();
+    } catch (e) {
+      console.error(e);
+      alert("Could not clear this learner's data: " + e.message);
+    }
   }));
   body.querySelectorAll('[data-action="delete"]').forEach(btn => btn.addEventListener("click", async () => {
     if (!confirm("Remove this learner from the register? Their past submissions will stay on file.")) return;
@@ -310,9 +316,19 @@ async function loadStaff() {
       <td>${u.email || "—"}</td>
       <td>${u.role}</td>
       <td>${u.role === "teacher" ? (u.grade || "—") : "—"}</td>
-      <td><button class="btn danger small" data-action="remove-staff" data-id="${u.id}">Remove access</button></td>`;
+      <td>
+        <button class="btn ghost small" data-action="edit-staff-name" data-id="${u.id}">Edit name</button>
+        <button class="btn danger small" data-action="remove-staff" data-id="${u.id}">Remove access</button>
+      </td>`;
     body.appendChild(tr);
   });
+  body.querySelectorAll('[data-action="edit-staff-name"]').forEach(btn => btn.addEventListener("click", async () => {
+    const staffMember = staffCache.find(u => u.id === btn.dataset.id);
+    const newName = prompt("Correct name (shown as \"Tr. ___\"):", staffMember ? staffMember.name : "");
+    if (newName === null || !newName.trim()) return;
+    await updateDoc(doc(db, "users", btn.dataset.id), { name: newName.trim() });
+    await loadStaff();
+  }));
   body.querySelectorAll('[data-action="remove-staff"]').forEach(btn => btn.addEventListener("click", async () => {
     if (!confirm("This immediately blocks this person from signing into any dashboard. Continue? (See the note below the table for the one extra manual step this doesn't do.)")) return;
     await deleteDoc(doc(db, "users", btn.dataset.id));
@@ -368,18 +384,47 @@ document.getElementById("addStaffBtn").addEventListener("click", async () => {
 /* ---------------- Submissions ---------------- */
 let submissionsCache = [];
 
+function termOptionValue(term, year) { return `${term}|${year}`; }
+
+function populateSubTermFilter() {
+  const combos = new Map();
+  // Always include the current term as an option, even with zero
+  // submissions yet — that's a useful "nobody's submitted yet" state.
+  combos.set(termOptionValue(currentTerm, currentYear), `${currentTerm}, ${currentYear} (current)`);
+  submissionsCache.forEach(s => {
+    if (s.term && s.year) {
+      const key = termOptionValue(s.term, s.year);
+      if (!combos.has(key)) combos.set(key, `${s.term}, ${s.year}`);
+    }
+  });
+  const sel = document.getElementById("subTermFilter");
+  const wasSet = sel.dataset.initialized === "true";
+  const previousValue = sel.value;
+  sel.innerHTML = `<option value="__all__">All terms</option>` +
+    [...combos.entries()].map(([v, label]) => `<option value="${v}">${label}</option>`).join("");
+  // Default to the current term on first load; preserve the admin's
+  // choice on later refreshes (e.g. after downloading a PDF).
+  sel.value = wasSet && [...sel.options].some(o => o.value === previousValue)
+    ? previousValue
+    : termOptionValue(currentTerm, currentYear);
+  sel.dataset.initialized = "true";
+}
+
 async function loadSubmissions() {
   const snap = await getDocs(collection(db, "submissions"));
   submissionsCache = snap.docs.map(d => d.data());
+  populateSubTermFilter();
   applySubmissionFilters();
 }
 
 function applySubmissionFilters() {
   const q = norm(document.getElementById("subSearch").value);
   const grade = document.getElementById("subGradeFilter").value;
+  const termVal = document.getElementById("subTermFilter").value;
   renderSubmissions(submissionsCache.filter(s =>
     (!q || norm(s.firstName + " " + s.lastName).includes(q)) &&
-    (!grade || s.grade === grade)
+    (!grade || s.grade === grade) &&
+    (termVal === "__all__" || termOptionValue(s.term, s.year) === termVal)
   ));
 }
 
@@ -410,3 +455,4 @@ function renderSubmissions(list) {
 
 document.getElementById("subSearch").addEventListener("input", applySubmissionFilters);
 document.getElementById("subGradeFilter").addEventListener("change", applySubmissionFilters);
+document.getElementById("subTermFilter").addEventListener("change", applySubmissionFilters);
