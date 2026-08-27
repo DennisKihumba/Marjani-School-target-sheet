@@ -88,10 +88,8 @@
         <div id="sGradeWrap"><label for="sGrade">Lead teacher for grade</label><select id="sGrade"></select></div>
       </form>
       <div class="row-btns"><button type="button" class="btn" id="addStaffBtn">Create account</button></div>
-      <p class="sub" style="margin-top:14px;">Share the email and temporary password with the teacher directly — they should change the password after first sign-in (via "Forgot password" on the staff sign-in page).</p>
 
       <h2 class="title" style="margin-top:32px;">Staff accounts</h2>
-      <p class="sub"><strong>Important if you plan to reuse an email (e.g. keeping "Grade4@..." for whoever leads Grade 4 next):</strong> clicking "Remove access" below only blocks that person from opening a dashboard — it does <strong>not</strong> free up their email. The email/password sign-in itself lives in Firebase's Authentication system separately, and creating a new account with that same email will fail with "email already in use" until you also delete it there. To fully free up an email: Firebase console → Authentication → Users tab → find the email → delete it. Only after that manual step can a new teacher use the same email address.</p>
       <div class="table-wrap">
         <table class="data-table">
           <thead><tr><th style="width:14%;">Name</th><th style="width:24%;">Email</th><th style="width:10%;">Role</th><th style="width:18%;">Grade</th><th style="width:34%;"></th></tr></thead>
