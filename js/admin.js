@@ -13,6 +13,10 @@ function fillSelect(sel, options, placeholder) {
   sel.innerHTML = (placeholder ? `<option value="">${placeholder}</option>` : "") +
     options.map(o => `<option value="${o}">${o}</option>`).join("");
 }
+// Matches the same format js/learner.js uses to build a submission's doc ID.
+function termKey(term, year) { return `${year}-${term}`.replace(/\s+/g, ""); }
+let currentTerm = "Term 1";
+let currentYear = new Date().getFullYear();
 
 /* ---------------- Auth guard ---------------- */
 onAuthStateChanged(auth, async (user) => {
@@ -57,11 +61,11 @@ async function init() {
 /* ---------------- Term ---------------- */
 async function loadTerm() {
   const snap = await getDoc(doc(db, "config", "term"));
-  const term = snap.exists() ? snap.data().term : "Term 1";
-  const year = snap.exists() ? snap.data().year : new Date().getFullYear();
-  document.getElementById("currentTermLabel").textContent = `${term}, ${year}`;
-  document.getElementById("termSelect").value = term;
-  document.getElementById("termYear").value = year;
+  currentTerm = snap.exists() ? snap.data().term : "Term 1";
+  currentYear = snap.exists() ? snap.data().year : new Date().getFullYear();
+  document.getElementById("currentTermLabel").textContent = `${currentTerm}, ${currentYear}`;
+  document.getElementById("termSelect").value = currentTerm;
+  document.getElementById("termYear").value = currentYear;
 }
 
 document.getElementById("saveTermBtn").addEventListener("click", async () => {
@@ -167,7 +171,10 @@ function renderLearnerTable(list) {
       <td>
         <select data-action="grade-select" data-id="${l.id}" style="display:inline-block;width:auto;margin:0 6px 0 0;padding:6px 8px;font-size:12.5px;"></select>
         <button class="btn ghost small" data-action="save-grade" data-id="${l.id}">Move grade</button>
+        <button class="btn ghost small" data-action="edit-name" data-id="${l.id}">Edit name</button>
+        <button class="btn ghost small" data-action="change-pin" data-id="${l.id}">Change PIN</button>
         <button class="btn ghost small" data-action="reset-session" data-id="${l.id}">Reset sign-in</button>
+        <button class="btn ghost small" data-action="start-fresh" data-id="${l.id}">Start fresh</button>
         <button class="btn danger small" data-action="delete" data-id="${l.id}">Delete</button>
       </td>`;
     body.appendChild(tr);
@@ -181,9 +188,42 @@ function renderLearnerTable(list) {
     await updateDoc(doc(db, "learners", btn.dataset.id), { grade: newGrade });
     await loadLearners();
   }));
+  body.querySelectorAll('[data-action="edit-name"]').forEach(btn => btn.addEventListener("click", async () => {
+    const learner = learnersCache.find(l => l.id === btn.dataset.id);
+    const newFirst = prompt("Correct first name:", learner ? learner.firstName : "");
+    if (newFirst === null || !newFirst.trim()) return;
+    const newLast = prompt("Correct last name:", learner ? learner.lastName : "");
+    if (newLast === null || !newLast.trim()) return;
+    await updateDoc(doc(db, "learners", btn.dataset.id), {
+      firstName: newFirst.trim(), lastName: newLast.trim(),
+      firstNameLower: norm(newFirst), lastNameLower: norm(newLast)
+    });
+    await loadLearners();
+  }));
+  body.querySelectorAll('[data-action="change-pin"]').forEach(btn => btn.addEventListener("click", async () => {
+    const newPin = prompt("Enter a new 4-digit PIN for this learner:");
+    if (newPin === null) return; // cancelled
+    if (!/^\d{4}$/.test(newPin.trim())) {
+      alert("PIN must be exactly 4 digits.");
+      return;
+    }
+    await updateDoc(doc(db, "learners", btn.dataset.id), { pin: newPin.trim() });
+    await loadLearners();
+  }));
   body.querySelectorAll('[data-action="reset-session"]').forEach(btn => btn.addEventListener("click", async () => {
     await updateDoc(doc(db, "learners", btn.dataset.id), { linkedUid: null });
     alert("Sign-in reset — this learner can now log in from any device again.");
+  }));
+  body.querySelectorAll('[data-action="start-fresh"]').forEach(btn => btn.addEventListener("click", async () => {
+    if (!confirm(`This clears this learner's ${currentTerm}, ${currentYear} subjects and target scores, and resets their sign-in — they'll start completely from scratch next time they log in. This does NOT affect other terms' records. Continue?`)) return;
+    const learnerId = btn.dataset.id;
+    const subId = `${learnerId}_${termKey(currentTerm, currentYear)}`;
+    try {
+      await deleteDoc(doc(db, "submissions", subId));
+    } catch (e) { /* fine if it never existed */ }
+    await updateDoc(doc(db, "learners", learnerId), { linkedUid: null });
+    alert("Done — this learner can log in and start fresh for the current term.");
+    await loadSubmissions();
   }));
   body.querySelectorAll('[data-action="delete"]').forEach(btn => btn.addEventListener("click", async () => {
     if (!confirm("Remove this learner from the register? Their past submissions will stay on file.")) return;
@@ -220,6 +260,17 @@ document.getElementById("addLearnerBtn").addEventListener("click", async () => {
   }
   if (!pin) pin = randomPin();
 
+  const duplicate = learnersCache.find(l =>
+    norm(l.firstName) === norm(first) && norm(l.lastName) === norm(last) && l.grade === grade
+  );
+  if (duplicate) {
+    const proceed = confirm(
+      `${first} ${last} is already on the register in ${grade} (PIN: ${duplicate.pin}).\n\n` +
+      `Add another learner with this same name in the same grade anyway? Click OK only if this is genuinely a different learner (e.g. two learners who happen to share a name).`
+    );
+    if (!proceed) return;
+  }
+
   try {
     await setDoc(doc(collection(db, "learners")), {
       firstName: first, lastName: last,
@@ -249,14 +300,24 @@ let staffCache = [];
 
 async function loadStaff() {
   const snap = await getDocs(collection(db, "users"));
-  staffCache = snap.docs.map(d => d.data());
+  staffCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   const body = document.getElementById("staffTableBody");
   body.innerHTML = "";
   staffCache.forEach(u => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>Tr. ${u.name || "—"}</td><td>${u.email || "—"}</td><td>${u.role}</td><td>${u.role === "teacher" ? (u.grade || "—") : "—"}</td>`;
+    tr.innerHTML = `
+      <td>Tr. ${u.name || "—"}</td>
+      <td>${u.email || "—"}</td>
+      <td>${u.role}</td>
+      <td>${u.role === "teacher" ? (u.grade || "—") : "—"}</td>
+      <td><button class="btn danger small" data-action="remove-staff" data-id="${u.id}">Remove access</button></td>`;
     body.appendChild(tr);
   });
+  body.querySelectorAll('[data-action="remove-staff"]').forEach(btn => btn.addEventListener("click", async () => {
+    if (!confirm("This immediately blocks this person from signing into any dashboard. Continue? (See the note below the table for the one extra manual step this doesn't do.)")) return;
+    await deleteDoc(doc(db, "users", btn.dataset.id));
+    await loadStaff();
+  }));
 }
 
 document.getElementById("addStaffBtn").addEventListener("click", async () => {
